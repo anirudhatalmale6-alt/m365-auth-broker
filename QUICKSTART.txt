@@ -1,0 +1,96 @@
+MICROSOFT 365 OAUTH BROKER - QUICK START
+========================================
+
+Repo: github.com/anirudhatalmale6-alt/m365-auth-broker
+
+
+WHAT IT DOES
+------------
+Your desktop app calls this. It opens the user's browser, they sign in to
+Microsoft 365, and the access token comes straight back to the desktop
+machine. No server ever holds anyone's mail token.
+
+Permissions requested: read the user's mail, send mail as the user, and
+renew access silently so they only sign in once.
+
+
+1. RUN THE TESTS (no Microsoft account needed)
+----------------------------------------------
+    git clone https://github.com/anirudhatalmale6-alt/m365-auth-broker.git
+    cd m365-auth-broker
+    pip install -e ".[dev]"
+    pytest
+
+123 tests, all offline against a stub Microsoft. Takes about 45 seconds.
+
+
+2. REGISTER THE APP (5 minutes, one time)
+-----------------------------------------
+Full walkthrough, field by field, is in docs/AZURE_SETUP.md.
+
+Short version:
+  - entra.microsoft.com -> App registrations -> New registration
+  - Authentication -> Add a platform -> Mobile and desktop applications
+    -> add redirect URI:   http://localhost
+  - API permissions -> Microsoft Graph -> Delegated:
+        offline_access, openid, profile, User.Read, Mail.Read, Mail.Send
+  - Copy the "Application (client) ID"
+
+Do NOT create a client secret. A desktop app cannot protect one - that is
+why this uses PKCE instead. Explained in docs/SECURITY.md.
+
+
+3. TRY IT FOR REAL
+------------------
+    export M365_CLIENT_ID=<the Application (client) ID>
+
+    m365-auth login
+    m365-auth whoami
+    m365-auth mail list --top 5
+    m365-auth mail send --to you@yourdomain.com --subject Test --body Working
+
+If those four work, the whole thing works.
+
+
+4. HOW YOUR DESKTOP APP USES IT
+-------------------------------
+Whatever language your app is in, it spawns the broker and reads one line
+of JSON from stdout:
+
+    m365-auth login --json
+    m365-auth token --json
+
+"token" always hands back a currently valid token, renewing quietly in the
+background. Your app never has to think about expiry.
+
+Output looks like:
+
+    {"ok": true,
+     "access_token": "eyJ0eXAiOi...",
+     "expires_in": 3599,
+     "scope": "openid profile User.Read Mail.Read Mail.Send",
+     "account": {"name": "Ada Lovelace",
+                 "username": "ada@contoso.onmicrosoft.com"}}
+
+On failure you get {"ok": false, "error": "<code>", "message": "..."} and a
+non-zero exit code. The error codes are listed in the README.
+
+Ready-made wrapper classes:
+    examples/csharp_integration.cs   (.NET / WPF / WinForms)
+    examples/node_integration.js     (Node / Electron)
+    examples/python_integration.py   (Python)
+
+
+WHAT I COULD NOT TEST
+---------------------
+I have no Microsoft 365 tenant, so I could not run a live sign-in against
+the real Microsoft servers. Everything is tested against a stub that
+follows Microsoft's documented request and response shapes.
+
+The parts I would expect to need a small adjustment on first live run are
+tenant type and consent settings - both are configuration, not code, and
+the troubleshooting table at the end of docs/AZURE_SETUP.md maps every
+likely Microsoft error code to its fix.
+
+Send me your client ID and I will walk through the first live sign-in with
+you.
