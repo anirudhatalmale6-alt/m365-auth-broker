@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+.eggs/
+
+# Testing
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# Local configuration - never commit real values
+.env
+.env.local
+
+# Cached tokens, in case anyone points --token-file at the repo
+tokens.json
+*.tokens.json
+
+# Editors / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
